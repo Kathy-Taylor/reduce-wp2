@@ -2,7 +2,7 @@
 # Script to prepare data for WP2_1 of the REDUCE HF project
 # KS Taylor
 
-#rm(v)
+
 rm(list=ls()) 
 
 #install.packages("feather")
@@ -23,13 +23,38 @@ library(feather)
 
 # Select dataset
 # COVID
-df <- read_csv(here::here("output", "tmp_dataset_wp2_1.csv.gz"),show_col_types = FALSE)
+# df1 <- read_csv(here::here("output", "tmp_dataset_wp2_1.csv.gz"),show_col_types = FALSE)
+# df2 <- read_csv(here::here("output", "dataset_wp2_1.csv.gz"),show_col_types = FALSE)
+# 
+# # Columns present in Step 1 but absent in Step 2
+# setdiff(names(df1), names(df2))
+# 
+# # Columns added in Step 2
+# setdiff(names(df2), names(df1))
+
+df <- read_csv(here::here("output", "dataset_wp2_1.csv.gz"),show_col_types = FALSE)
+
+
+
 # Post-COVID
 # df <-.....    
 
 nrow(df)        
-# Check everyone has a HF symptom date
-all(!is.na(df$first_hfsymptom_date))
+
+# FILENAMES OF CHECKS - expressed as negatives e.g. has no first HF symp date  
+
+# Check everyone has a first HF symptom date
+counts <- data.frame(
+  variable = "first_hfsymptom_date",
+  count_NA = sum(is.na(df$first_hfsymptom_date)),
+  count_non_NA = sum(!is.na(df$first_hfsymptom_date))
+)
+
+write.csv(counts,paste0("/workspace/wp2_1/checks/check_no1stHFsympdate","_",Sys.Date(),".csv"), row.names=FALSE) 
+
+# sum(is.na(df$first_hfsymptom_date))
+# table(all(!is.na(df$first_hfsymptom_date)))
+
 
 
 # TEMP CODE - FOR DUMMY DATASET ONLY ###########################################
@@ -137,22 +162,57 @@ sum(is.na(df$first_hfsymptom_date))
 # first_hfsymptom_date (cohort entry date) is the date of first HF symptom between patient index date and study end date
 
 # Additional exclusions for WP2_1
+
+# Check first near symp is after index date (exclude if before)
  
 sum(!is.na(df$np_near_symptom_first) & !is.na(df$patient_index_date) & df$np_near_symptom_first<df$patient_index_date)
-
 # 0
 
-# HF symptom before patient_index_date
+counts <- data.frame(
+  variable = "np_near_symptom_first < patient_index_date",
+  count = sum(df$np_near_symptom_first < df$patient_index_date,
+              na.rm = TRUE)
+)
+
+write.csv(counts,paste0("/workspace/wp2_1/checks/check_1stNPnearHFsymp_beforeindex","_",Sys.Date(),".csv"), row.names=FALSE) 
+
+# Exclude if not.
+nrow(df)
+df<-df[!(!is.na(df$np_near_symptom_first) & !is.na(df$patient_index_date) & df$np_near_symptom_first<df$patient_index_date),]
+nrow(df)
+
+# Check no HF symptoms before patient_index_date
 sum(df$symptom_pre_index==TRUE)
-# 49
+# 343
+counts <- data.frame(
+  count = sum(df$symptom_pre_index==TRUE, na.rm = TRUE)
+)
+
+write.csv(counts,paste0("/workspace/wp2_1/checks/check_HFsymp_beforeindex","_",Sys.Date(),".csv"), row.names=FALSE) 
+
+
+# Exclude if not
 df <- df[df$symptom_pre_index==FALSE,]
 
-# HF diagnosis before cohort entry date
+# Check HF diagnosis is after cohort entry date
 sum(!is.na(df$hf_diagnosis_date) & !is.na(df$first_hfsymptom_date) & df$hf_diagnosis_date<df$first_hfsymptom_date)
-# 74
-df <-df[!(!is.na(df$hf_diagnosis_date) & !is.na(df$first_hfsymptom_date) & df$hf_diagnosis_date<df$first_hfsymptom_date),]
-table(df$np_near_symptom)
+# 518
 
+
+counts <- data.frame(
+  variable = "hf_diagnosis_date < first_hfsymptom_date",
+  count = sum(df$hf_diagnosis_date < df$first_hfsymptom_date,
+              na.rm = TRUE)
+)
+
+write.csv(counts,paste0("/workspace/wp2_1/checks/check_HFdiag_beforecohortentry","_",Sys.Date(),".csv"), row.names=FALSE) 
+
+# Exclude if not.
+nrow(df)
+df <-df[!(!is.na(df$hf_diagnosis_date) & !is.na(df$first_hfsymptom_date) & df$hf_diagnosis_date<df$first_hfsymptom_date),]
+nrow(df)
+
+table(df$np_near_symptom)
 
 # Reads dates as characters if all are NA
 # # Convert character dates to date format
