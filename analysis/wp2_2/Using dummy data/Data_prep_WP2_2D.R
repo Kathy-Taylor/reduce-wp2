@@ -2,7 +2,6 @@
 # Script to prepare data for WP2_2 of the REDUCE HF project
 # KS Taylor
 
-#rm(v)
 rm(list=ls()) 
 
 # Load packages
@@ -18,8 +17,9 @@ library(feather)
 
 # Select dataset
 # COVID
-df <- read_csv(here::here("output", "tmp_dataset_wp2_2.csv.gz"),show_col_types = FALSE)
+#df <- read_csv(here::here("output", "tmp_dataset_wp2_2.csv.gz"),show_col_types = FALSE)
 #df <- read_csv(here::here("output", "dataset_wp2t.csv.gz"),show_col_types = FALSE)
+df <- read_csv(here::here("output", "dataset_wp2_2.csv.gz"),show_col_types = FALSE)
 
 
 # Post-COVID
@@ -29,6 +29,15 @@ nrow(df)
 all(!is.na(df$nt1_date))
 all(!is.na(df$nt1_result))
 all(!is.na(df$death_date))
+
+counts <- data.frame(
+  variable = "firstNPdate",
+  count_NA = sum(is.na(df$nt1_date)),
+  count_non_NA = sum(!is.na(df$nt1_date))
+)
+
+write.csv(counts,paste0("/workspace/output/wp2_2/checks/check_no1stNPdate","_",Sys.Date(),".csv"), row.names=FALSE) 
+
 
 # TEMP CODE - FOR DUMMY DATASET ONLY ###########################################
 
@@ -94,6 +103,7 @@ nrow(df)
 df2 <- df
 df3 <- df
 df4 <- df
+
 df5 <- df
 df6 <- df
 df7 <- df
@@ -103,7 +113,7 @@ nrow(df)
 table(df$imd_quintile)
 df8 <- df
 df8$sex <- "female"
-#df$imd_quintile<-"1 (most deprived)"
+df$imd_quintile<-"1 (most deprived)"
 df <- bind_rows(df,df8)
 table(df$imd_quintile)
 rm(df2,df3,df4,df5,df6,df7,df8)
@@ -135,18 +145,47 @@ sum(is.na(df$nt1_result))
 
 # Additional exclusions for WP2_2
 
-# NP testing before patient_index_date
+# Check no NP testing before patient_index_date
 sum(df$np_pre_index==TRUE)
-df <-df[df$np_pre_index==FALSE,]
-# 0
 
-# HF diagnosis before cohort entry date
+# 0
+counts <- data.frame(
+  count = sum(df$np_pre_index==TRUE, na.rm = TRUE)
+)
+
+write.csv(counts,paste0("/workspace/output/wp2_2/checks/check_NPtest_beforeindex","_",Sys.Date(),".csv"), row.names=FALSE) 
+
+# Exclude if before
+df <-df[df$np_pre_index==FALSE,]
+
+# Check no HF diagnosis before cohort entry date
 sum(!is.na(df$hf_diagnosis_date) & !is.na(df$nt1_date) & df$hf_diagnosis_date<df$nt1_date)
 # 5
+
+counts <- data.frame(
+  variable = "hf_diagnosis_date<nt1_date",
+  count = sum(df$hf_diagnosis_date<df$nt1_date,
+              na.rm = TRUE)
+)
+
+write.csv(counts,paste0("/workspace/output/wp2_2/checks/check_HFdiag_beforecohortentry","_",Sys.Date(),".csv"), row.names=FALSE) 
+
+# Exclude if before 
 df <-df[!(!is.na(df$hf_diagnosis_date) & !is.na(df$nt1_date) & df$hf_diagnosis_date<df$nt1_date),]
 
-# BNP test between the eligibility date and cohort entry
+# Check if BNP test between the eligibility date and cohort entry
 sum(!is.na(df$nt1_date) & !is.na(df$np_date) & df$np_date<df$nt1_date)
+
+counts <- data.frame(
+  variable = "np_date<nt1_date",
+  count = sum(df$np_date<df$nt1_date,
+              na.rm = TRUE)
+)
+
+write.csv(counts,paste0("/workspace/output/wp2_2/checks/check_BNPtest_beforecohortentry","_",Sys.Date(),".csv"), row.names=FALSE) 
+
+
+# Exclude 
 df <- df[!(!is.na(df$nt1_date) & !is.na(df$np_date) & df$np_date<df$nt1_date),]
 
 # Reads dates as characters if all are NA
@@ -172,9 +211,11 @@ df <- df %>%
 
 
 # Age
-df$age<- as.numeric(difftime(df$patient_index_date,df$dob, units="days"))/365.25
+df$age<- as.numeric(difftime(df$patient_index_date,df$birth_date, units="days"))/365.25
 summary(df$age)
-
+jpeg("/workspace/output/wp2_2/checks/age.jpeg")
+hist(df$age)
+dev.off()
 
 # Age categories
 
@@ -186,7 +227,7 @@ table(df$agecat3)
 
 # BMI
 summary(df$bmi)
-
+sum(df$bmi!=0, na.rm=TRUE)
 
 # Calculate bmi from height and weight if possible
 df <- df %>%
@@ -195,13 +236,25 @@ df <- df %>%
     is.na(weight) | is.na(height) ~ NA_real_,
     TRUE ~ weight / (height^2)
   ))
+summary(df$bmi)
+sum(df$bmi!=0, na.rm=TRUE)
 
+jpeg("/workspace/output/wp2_2/checks/bmi.jpeg")
+hist(df$bmi)
+dev.off()
 
 # Systolic BP
 summary(df$sbp)
+jpeg("/workspace/output/wp2_2/checks/sbp.jpeg")
+hist(df$sbp)
+dev.off()
 
 # Diastolic BP
 summary(df$dbp)
+jpeg("/workspace/output/wp2_2/checks/dbp.jpeg")
+hist(df$dbp)
+dev.off()
+
 
 # Ethnicity
 table(df$ethnicity_cat)
@@ -211,6 +264,9 @@ table(df$sex)
 
 # Cholesterol
 summary(df$cholesterol)
+jpeg("/workspace/output/wp2_2/checks/cholesterol.jpeg")
+hist(df$cholesterol)
+dev.off()
 
 # COPD
 any(grepl("copd",names(df)))
@@ -222,7 +278,9 @@ table(df$copd)
 # Diabetes
 any(grepl("diabetes",names(df)))
 grep("diabetes",names(df), value=TRUE)
-df$diabetes <- ifelse(is.na(df$tmp_first_diabetes_diag_date),0,1)
+#df$diabetes <- ifelse(is.na(df$tmp_first_diabetes_diag_date),0,1)
+df$diabetes <- ifelse(df$cat_diabetes == "DM unlikely", 0, 1)
+
 table(df$diabetes)
 
 # Asthma
@@ -258,8 +316,8 @@ table(df$ckd)
 # IMD
 table(df$imd_quintile)
 df$deprived <- NA
-df$deprived <- ifelse(is.na(df$deprived) & df$imd_quintile=="1",1,df$deprived)
-df$deprived <- ifelse(is.na(df$deprived) & df$imd_quintile!="1" & df$imd_quintile!="unknown",0,df$deprived)
+df$deprived <- ifelse(is.na(df$deprived) & df$imd_quintile=="1 (most deprived)",1,df$deprived)
+df$deprived <- ifelse(is.na(df$deprived) & df$imd_quintile!="1 (most deprived)" & df$imd_quintile!="unknown",0,df$deprived)
 df$deprived <- ifelse(is.na(df$deprived),2,df$deprived)
 df$deprived <- factor(df$deprived, levels=0:2, labels=c("Not deprived", "Bottom quintile", "Unknown"))
 table(df$deprived)
@@ -323,6 +381,13 @@ table(df$diag)
 df$NT <- ifelse(is.na(df$nt1_date),0,1)
 table(df$NT)
 
+summary(df$nt1_result)
+jpeg("/workspace/output/wp2_2/checks/nt1_result.jpeg")
+hist(df$nt1_result)
+dev.off()
+
+
+
 # Time between the first NTPro test and the HF diagnosis
 # Code time 1 month before to <2weeks after as 0 days
 # also categorise <2 weeks, 2 to <6 weeks, 6-12 weeks
@@ -332,6 +397,10 @@ df$NT2HF<- as.numeric(difftime(df$diag_date,df$nt1_date, units="days"))
 str(df$NT2HF)
 
 summary(df$NT2HF)
+jpeg("/workspace/output/wp2_2/checks/NT2HF.jpeg")
+hist(df$NT2HF)
+dev.off()
+
 df$NT2HF_cat <- NA
 df$NT2HF_cat <- ifelse(is.na(df$NT2HF_cat) & df$NT2HF<14, 0, df$NT2HF_cat)
 df$NT2HF_cat <- ifelse(is.na(df$NT2HF_cat) & df$NT2HF<42, 1, df$NT2HF_cat)
@@ -346,7 +415,6 @@ table(df$NT2HF_cat)
 
 # Save file for analysis
 # Using feather as it compresses and preserves column types
-write_feather(df,"/workspace/test/file4analysisWP2_2_COVID.feather")
-#write_feather(df,"/workspace/test/file4analysisWP2_2_postCOVID.feather")
+write_feather(df,"/workspace/output/file4analysisWP2_2_COVID.feather")
 
 

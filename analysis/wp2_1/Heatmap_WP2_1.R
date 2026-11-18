@@ -4,8 +4,8 @@
 # TEMP
 # count number male
 
+install.packages("leaflet")
 
-rm(v)
 rm(list=ls()) 
 
 library(feather)
@@ -32,7 +32,7 @@ str(regions$region)
 
 # Import files
 # General datafile
-df <- read_feather(here::here("test", "file4analysisWP2_1_COVID.feather"))
+df <- read_feather(here::here("output", "file4analysisWP2_1_COVID.feather"))
 # Only for post-COVID WP2_1. 
 any(grepl("region",names(df)))
 grep("region",names(df), value=TRUE)

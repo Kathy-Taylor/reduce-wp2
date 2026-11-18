@@ -1,0 +1,424 @@
+# Data_prep_WP2_1.R
+# Script to prepare data for WP2_1 of the REDUCE HF project
+# KS Taylor
+
+
+rm(list=ls()) 
+
+#install.packages("feather")
+
+# Load packages
+library(lubridate)
+library(dplyr)
+library(readr)
+library(feather)
+
+# Load data 
+# This is dummy data 
+
+# df <- read_csv(here::here("test", "tmp_dataset_wp2_2.csv.gz"),show_col_types = FALSE)
+# df <- read.csv("/workspace/test/tmp_dataset_wp2_2.csv.gz", header=TRUE)
+# old datafiles
+
+
+#Select dataset
+#COVID
+df1 <- read_csv(here::here("output", "tmp_dataset_wp2_1.csv.gz"),show_col_types = FALSE)
+df2 <- read_csv(here::here("output", "dataset_wp2_1.csv.gz"),show_col_types = FALSE)
+
+# Columns present in Step 1 but absent in Step 2
+setdiff(names(df1), names(df2))
+
+# Columns added in Step 2
+setdiff(names(df2), names(df1))
+
+df <- read_csv(here::here("output", "dataset_wp2_1.csv.gz"),show_col_types = FALSE)
+
+
+
+# Post-COVID
+# df <-.....    
+
+nrow(df)        
+
+# FILENAMES OF CHECKS - expressed as negatives e.g. has no first HF symp date  
+
+# Check everyone has a first HF symptom date
+counts <- data.frame(
+  variable = "first_hfsymptom_date",
+  count_NA = sum(is.na(df$first_hfsymptom_date)),
+  count_non_NA = sum(!is.na(df$first_hfsymptom_date))
+)
+
+write.csv(counts,paste0("/workspace/output/wp2_1/checks/check_no1stHFsympdate","_",Sys.Date(),".csv"), row.names=FALSE) 
+
+# sum(is.na(df$first_hfsymptom_date))
+# table(all(!is.na(df$first_hfsymptom_date)))
+
+
+table(df$np_near_symptom)
+
+
+# Start date and end dates define the population - applied by Charlotte 
+# COVID start date 1/1/20, end date 31/3/24  
+# Post-COVID start date 1/4/24, end date 1/4/27 (currently set at 1/5/25) 
+# Starts one year after 1/4/23 to allow for recovery from pandemic. 
+# QUERY - reference for 1/4/23
+df$Covid_start <- as.Date("2020-01-01")
+df$Covid_end <- as.Date("2024-03-31")
+# Dates TBC 
+
+sum(is.na(df$first_hfsymptom_date))
+# All have symptoms
+
+# Data cleaning
+# Currently not clear what will be done for the final dataset
+
+# patient_index_date (eligibility date) is the latest of date of age 45 years, study start date and registration date plus 1 year.
+
+# first_hfsymptom_date (cohort entry date) is the date of first HF symptom between patient index date and study end date
+
+# Additional exclusions for WP2_1
+
+# Check first near symp is after index date 
+ 
+sum(!is.na(df$np_near_symptom_first) & !is.na(df$patient_index_date) & df$np_near_symptom_first<df$patient_index_date)
+# 0
+
+counts <- data.frame(
+  variable = "np_near_symptom_first < patient_index_date",
+  count = sum(df$np_near_symptom_first < df$patient_index_date,
+              na.rm = TRUE)
+)
+
+write.csv(counts,paste0("/workspace/output/wp2_1/checks/check_1stNPnearHFsymp_beforeindex","_",Sys.Date(),".csv"), row.names=FALSE) 
+
+# Exclude if before.
+
+df<-df[!(!is.na(df$np_near_symptom_first) & !is.na(df$patient_index_date) & df$np_near_symptom_first<df$patient_index_date),]
+
+
+# Check no HF symptoms before patient_index_date
+sum(df$symptom_pre_index==TRUE)
+# 343
+counts <- data.frame(
+  count = sum(df$symptom_pre_index==TRUE, na.rm = TRUE)
+)
+
+write.csv(counts,paste0("/workspace/output/wp2_1/checks/check_HFsymp_beforeindex","_",Sys.Date(),".csv"), row.names=FALSE) 
+
+
+# Exclude if before 
+df <- df[df$symptom_pre_index==FALSE,]
+
+# Check HF diagnosis is after cohort entry date
+sum(!is.na(df$hf_diagnosis_date) & !is.na(df$first_hfsymptom_date) & df$hf_diagnosis_date<df$first_hfsymptom_date)
+# 518
+
+
+counts <- data.frame(
+  variable = "hf_diagnosis_date < first_hfsymptom_date",
+  count = sum(df$hf_diagnosis_date < df$first_hfsymptom_date,
+              na.rm = TRUE)
+)
+
+write.csv(counts,paste0("/workspace/output/wp2_1/checks/check_HFdiag_beforecohortentry","_",Sys.Date(),".csv"), row.names=FALSE) 
+
+# Exclude if before.
+nrow(df)
+df <-df[!(!is.na(df$hf_diagnosis_date) & !is.na(df$first_hfsymptom_date) & df$hf_diagnosis_date<df$first_hfsymptom_date),]
+nrow(df)
+
+table(df$np_near_symptom)
+
+# Reads dates as characters if all are NA
+# # Convert character dates to date format
+# # Extracts all columns with "date" in their name    
+# datevars <- names(df)[grep("date",names(df))]
+# #   For each column, replace the character date with a Date format   
+# for (i in 1:length(datevars)){
+#   df[,datevars[i]] <- ymd(df[,datevars[i]])
+#   rm(i)
+# }
+# rm(datevars)
+# Shorten names
+
+any(grepl("breath",names(df)))
+grep("breath",names(df), value=TRUE)
+
+any(grepl("oedema",names(df)))
+grep("oedema",names(df), value=TRUE)
+
+any(grepl("fatigue",names(df)))
+grep("fatigue",names(df), value=TRUE)
+
+
+df <- df %>% 
+  rename(
+    diag_date=hf_diagnosis_date,
+    symp_date=first_hfsymptom_date,
+    oedema1date=oedema_date,
+    fatigue1date=fatigue_date,
+    breathless1date=breathless_date,
+    bmi=bmi_value,
+    cholesterol=last_cholesterol_value,
+    sbp=sysbp_value,
+    dbp=diasbp_value
+    )
+
+
+# Age
+df$age<- as.numeric(difftime(df$patient_index_date,df$birth_date, units="days"))/365.25
+summary(df$age)
+
+jpeg("/workspace/output/wp2_1/checks/age.jpeg")
+hist(df$age)
+dev.off()
+
+
+# BMI
+summary(df$bmi)
+# Calculate bmi from height and weight if possible
+df <- df %>%
+  mutate(bmi = case_when(
+    !is.na(bmi) ~ bmi,
+    is.na(weight) | is.na(height) ~ NA_real_,
+    TRUE ~ weight / (height^2)
+  ))
+summary(df$bmi)
+
+jpeg("/workspace/output/wp2_1/checks/bmi.jpeg")
+hist(df$bmi)
+dev.off()
+
+
+# Systolic BP
+summary(df$sbp)
+
+jpeg("/workspace/output/wp2_1/checks/sbp.jpeg")
+hist(df$sbp)
+dev.off()
+
+# Diastolic BP
+summary(df$dbp)
+
+jpeg("/workspace/output/wp2_1/checks/dbp.jpeg")
+hist(df$dbp)
+dev.off()
+
+# Ethnicity
+table(df$ethnicity_cat)
+
+# Sex
+table(df$sex)
+
+# Cholesterol
+summary(df$cholesterol)
+
+jpeg("/workspace/output/wp2_1/checks/cholesterol.jpeg")
+hist(df$cholesterol)
+dev.off()
+
+
+# COPD
+any(grepl("copd",names(df)))
+grep("copd",names(df), value=TRUE)
+df$copd <- ifelse(is.na(df$first_copd_date),0,1)
+#df$copd <- factor(df$copd, levels=0:1, labels=c("no COPD", "with COPD"))
+table(df$copd)
+
+# Diabetes
+any(grepl("diabetes",names(df)))
+grep("diabetes",names(df), value=TRUE)
+table(df$cat_diabetes)
+df$diabetes <- ifelse(df$cat_diabetes == "DM unlikely", 0, 1)
+#df$diabetes <- ifelse(is.na(df$tmp_first_diabetes_diag_date),0,1)
+table(df$diabetes)
+
+# Asthma
+any(grepl("asthma",names(df)))
+# none
+
+# Obesity
+any(grepl("obesity",names(df)))
+grep("obesity",names(df), value=TRUE)
+df$obesity <- ifelse(is.na(df$obesity_primary_date) & is.na(df$obesity_sus_date),0,1)
+table(df$obesity)
+
+
+# Hypertension
+any(grepl("hypertension",names(df)))
+grep("hypertension",names(df), value=TRUE)
+df$hypertension <- ifelse(!is.na(df$hypertension_date_primary)|!is.na(df$hypertension_date_sus)|
+                            is.na(df$hypertension_date_med),1,0)
+table(df$hypertension)
+
+# IHD
+
+any(grepl("ihd",names(df)))
+grep("ihd",names(df), value=TRUE)
+df$ihd <- ifelse(!is.na(df$ihd_date_primary)|!is.na(df$ihd_date_sus),1,0)
+table(df$ihd)
+
+# CKD
+any(grepl("ckd",names(df)))
+grep("ckd",names(df), value=TRUE)
+df$ckd <- ifelse(!is.na(df$ckd_date_primary)|!is.na(df$ckd_date_sus),1,0)
+table(df$ckd)
+
+# IMD
+table(df$imd_quintile)
+df$deprived <- NA
+df$deprived <- ifelse(is.na(df$deprived) & df$imd_quintile=="1 (most deprived)",1,df$deprived)
+df$deprived <- ifelse(is.na(df$deprived) & df$imd_quintile!="1 (most deprived)" & df$imd_quintile!="unknown",0,df$deprived)
+df$deprived <- ifelse(is.na(df$deprived),2,df$deprived)
+df$deprived <- factor(df$deprived, levels=0:2, labels=c("Not deprived", "Bottom quintile", "Unknown"))
+table(df$deprived)
+prop.table(table(df$deprived))
+
+# Smoking  
+table(df$smoking)
+df$smoking <- factor(df$smoking, levels=c("N", "S"), labels=c("Non=smoker","Smoker"))
+
+# Non-English speaker
+any(grepl("non_english",names(df)))
+grep("non_english",names(df), value=TRUE)
+table(df$non_english_speaking)
+df$non_english_sp <- factor(df$non_english_speaking, levels=c(FALSE, TRUE), 
+                            labels=c("English speaking","Non-english speaking"))
+table(df$non_english_sp)
+
+# Migrant status
+table(df$migrant)
+df$migrant <- factor(df$migrant, levels=c(FALSE, TRUE), 
+                            labels=c("Not","Migrant status"))
+# Learning disability
+table(df$learndis)
+df$LD <- ifelse(is.na(df$learndis),0,1)
+table(df$LD)
+
+# Severe mental illness
+table(df$smi)
+df$smi <- factor(df$smi, levels=c(FALSE, TRUE), 
+                 labels=c("Not","Severe mental illness"))
+table (df$smi)
+
+# Carehome resident
+table(df$carehome_at_index)
+df$carehome <- factor(df$carehome_at_index, levels=c(FALSE, TRUE), 
+                 labels=c("Not","Carehome"))
+
+# Substance abuse
+table(df$substance_abuse)
+df$substance_abuse <- factor(df$substance_abuse, levels=c(FALSE, TRUE), 
+                      labels=c("Not","Substance abuse"))
+table(df$substance_abuse)
+
+# Homeless
+table(df$homeless)
+df$homeless <- factor(df$homeless, levels=c(FALSE, TRUE), 
+                             labels=c("Not","Homeless"))
+table(df$homeless)
+
+# Housebound
+table(df$housebound)
+df$housebound <- factor(df$housebound, levels=c(FALSE, TRUE), 
+                      labels=c("Not","Housebound"))
+table(df$housebound)
+
+# HF diagnosis
+df$diag <- ifelse(is.na(df$diag_date),0,1)
+table(df$diag)
+
+
+# HF symptoms
+df$symp <- ifelse(is.na(df$symp_date),0,1)
+table(df$symp)
+#df$symp <- factor(df$symp, levels=0:1, labels=c("no symptoms", "with symptoms"))
+#table(df$symp)
+df$symp1 <- ifelse(is.na(df$oedema1date),0,1)
+df$symp2 <- ifelse(is.na(df$fatigue1date),0,1)
+df$symp3 <- ifelse(is.na(df$breathless1date),0,1)
+table(df$np)
+table(df$symp1)
+table(df$symp2)
+table(df$symp3)
+
+#Count symptoms
+df$countsymp <- df$symp1+df$symp2+df$symp3
+table(df$countsymp)
+str(df$countsymp)
+
+# Timings of HF-related symptoms relative to HF diagnosis
+# Symptom before HF diagnosis
+sum(df$symp_date<df$diag_date, na.rm=TRUE)
+# >0
+# Symptom at the same time as HF diagnosis
+sum(df$symp_date==df$diag_date, na.rm=TRUE)
+# 0
+# Symptom after HF diagnosis
+sum(df$symp_date>df$diag_date, na.rm=TRUE)
+# 0
+# With symptoms and no HF diagnosis
+sum(df$diag==0)
+# >0
+
+# NP measurement near first HF symptoms
+any(grepl("np",names(df)))
+grep("np",names(df), value=TRUE)
+
+# binary variable
+table(df$np_near_symptom)
+df$near_np <- factor(df$np_near_symptom, levels=c(FALSE, TRUE), 
+       labels=c("No","Yes"))
+table(df$near_np)
+table(df$np_near_symptom)
+
+
+# Echo done near symptom
+table(df$echo_done_near_symptom)
+df$near_echo <- factor(df$echo_done_near_symptom, levels=c(FALSE, TRUE), 
+                      labels=c("No","Yes"))
+table(df$near_echo)
+
+# Echo referral near symptom
+table(df$echo_ref_near_symptom)
+df$near_echoref <- factor(df$echo_ref_near_symptom, levels=c(FALSE, TRUE), 
+                          labels=c("No","Yes"))
+table(df$near_echoref) 
+
+# Time between the first near NP test and the first HF symptom
+# Code time 1 month before to <2weeks after as 0 days
+# also categorise <2 weeks, 2 to <6 weeks, 6-12 weeks
+
+str(df$symp_date)
+str(df$np_near_symptom_first)
+
+df$NP2symp<- as.numeric(difftime(df$np_near_symptom_first,df$symp_date, units="days"))
+str(df$NP2symp)
+
+summary(df$NP2symp)
+
+jpeg("/workspace/output/wp2_1/checks/NP2symp.jpeg")
+hist(df$NP2symp)
+dev.off()
+
+
+#d1 <- subset(df, select=c("symp_date","near_date", "NP2symp"))
+df$NP2symp_cat <- NA
+df$NP2symp_cat <- ifelse(is.na(df$NP2symp_cat) & df$NP2symp<0, 0, df$NP2symp_cat)
+df$NP2symp_cat <- ifelse(is.na(df$NP2symp_cat) & df$NP2symp<14, 0, df$NP2symp_cat)
+df$NP2symp_cat <- ifelse(is.na(df$NP2symp_cat) & df$NP2symp<42, 1, df$NP2symp_cat)
+df$NP2symp_cat <- ifelse(is.na(df$NP2symp_cat) & df$NP2symp>=42, 2, df$NP2symp_cat)
+df$NP2symp_cat <- factor(df$NP2symp_cat, levels = 0:2, labels = c("< 2 weeks","2-6 weeks",">= 6 weeks"))
+prop.table(table(df$NP2symp_cat))*100
+
+# May only select certain variables
+# keep <- c(......)
+# df <- df[,keep]
+table(df$np_near_symptom)
+
+# Save file for analysis
+# Using feather as it compresses and preserves column types
+write_feather(df,"/workspace/output/file4analysisWP2_1_COVID.feather")
+

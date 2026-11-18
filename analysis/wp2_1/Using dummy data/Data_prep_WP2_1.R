@@ -21,16 +21,16 @@ library(feather)
 # old datafiles
 
 
-# Select dataset
-# COVID
-# df1 <- read_csv(here::here("output", "tmp_dataset_wp2_1.csv.gz"),show_col_types = FALSE)
-# df2 <- read_csv(here::here("output", "dataset_wp2_1.csv.gz"),show_col_types = FALSE)
-# 
-# # Columns present in Step 1 but absent in Step 2
-# setdiff(names(df1), names(df2))
-# 
-# # Columns added in Step 2
-# setdiff(names(df2), names(df1))
+#Select dataset
+#COVID
+df1 <- read_csv(here::here("output", "tmp_dataset_wp2_1.csv.gz"),show_col_types = FALSE)
+df2 <- read_csv(here::here("output", "dataset_wp2_1.csv.gz"),show_col_types = FALSE)
+
+# Columns present in Step 1 but absent in Step 2
+setdiff(names(df1), names(df2))
+
+# Columns added in Step 2
+setdiff(names(df2), names(df1))
 
 df <- read_csv(here::here("output", "dataset_wp2_1.csv.gz"),show_col_types = FALSE)
 
@@ -50,7 +50,7 @@ counts <- data.frame(
   count_non_NA = sum(!is.na(df$first_hfsymptom_date))
 )
 
-write.csv(counts,paste0("/workspace/wp2_1/checks/check_no1stHFsympdate","_",Sys.Date(),".csv"), row.names=FALSE) 
+write.csv(counts,paste0("/workspace/output/wp2_1/checks/check_no1stHFsympdate","_",Sys.Date(),".csv"), row.names=FALSE) 
 
 # sum(is.na(df$first_hfsymptom_date))
 # table(all(!is.na(df$first_hfsymptom_date)))
@@ -163,7 +163,7 @@ sum(is.na(df$first_hfsymptom_date))
 
 # Additional exclusions for WP2_1
 
-# Check first near symp is after index date (exclude if before)
+# Check first near symp is after index date 
  
 sum(!is.na(df$np_near_symptom_first) & !is.na(df$patient_index_date) & df$np_near_symptom_first<df$patient_index_date)
 # 0
@@ -174,12 +174,12 @@ counts <- data.frame(
               na.rm = TRUE)
 )
 
-write.csv(counts,paste0("/workspace/wp2_1/checks/check_1stNPnearHFsymp_beforeindex","_",Sys.Date(),".csv"), row.names=FALSE) 
+write.csv(counts,paste0("/workspace/output/wp2_1/checks/check_1stNPnearHFsymp_beforeindex","_",Sys.Date(),".csv"), row.names=FALSE) 
 
-# Exclude if not.
-nrow(df)
+# Exclude if before.
+
 df<-df[!(!is.na(df$np_near_symptom_first) & !is.na(df$patient_index_date) & df$np_near_symptom_first<df$patient_index_date),]
-nrow(df)
+
 
 # Check no HF symptoms before patient_index_date
 sum(df$symptom_pre_index==TRUE)
@@ -188,10 +188,10 @@ counts <- data.frame(
   count = sum(df$symptom_pre_index==TRUE, na.rm = TRUE)
 )
 
-write.csv(counts,paste0("/workspace/wp2_1/checks/check_HFsymp_beforeindex","_",Sys.Date(),".csv"), row.names=FALSE) 
+write.csv(counts,paste0("/workspace/output/wp2_1/checks/check_HFsymp_beforeindex","_",Sys.Date(),".csv"), row.names=FALSE) 
 
 
-# Exclude if not
+# Exclude if before 
 df <- df[df$symptom_pre_index==FALSE,]
 
 # Check HF diagnosis is after cohort entry date
@@ -205,9 +205,9 @@ counts <- data.frame(
               na.rm = TRUE)
 )
 
-write.csv(counts,paste0("/workspace/wp2_1/checks/check_HFdiag_beforecohortentry","_",Sys.Date(),".csv"), row.names=FALSE) 
+write.csv(counts,paste0("/workspace/output/wp2_1/checks/check_HFdiag_beforecohortentry","_",Sys.Date(),".csv"), row.names=FALSE) 
 
-# Exclude if not.
+# Exclude if before.
 nrow(df)
 df <-df[!(!is.na(df$hf_diagnosis_date) & !is.na(df$first_hfsymptom_date) & df$hf_diagnosis_date<df$first_hfsymptom_date),]
 nrow(df)
@@ -251,8 +251,13 @@ df <- df %>%
 
 
 # Age
-df$age<- as.numeric(difftime(df$patient_index_date,df$dob, units="days"))/365.25
+df$age<- as.numeric(difftime(df$patient_index_date,df$birth_date, units="days"))/365.25
 summary(df$age)
+
+jpeg("/workspace/output/wp2_1/checks/age.jpeg")
+hist(df$age)
+dev.off()
+
 
 # BMI
 summary(df$bmi)
@@ -265,12 +270,24 @@ df <- df %>%
   ))
 summary(df$bmi)
 
+jpeg("/workspace/output/wp2_1/checks/bmi.jpeg")
+hist(df$bmi)
+dev.off()
+
+
 # Systolic BP
 summary(df$sbp)
+
+jpeg("/workspace/output/wp2_1/checks/sbp.jpeg")
+hist(df$sbp)
+dev.off()
 
 # Diastolic BP
 summary(df$dbp)
 
+jpeg("/workspace/output/wp2_1/checks/dbp.jpeg")
+hist(df$dbp)
+dev.off()
 
 # Ethnicity
 table(df$ethnicity_cat)
@@ -280,6 +297,11 @@ table(df$sex)
 
 # Cholesterol
 summary(df$cholesterol)
+
+jpeg("/workspace/output/wp2_1/checks/cholesterol.jpeg")
+hist(df$cholesterol)
+dev.off()
+
 
 # COPD
 any(grepl("copd",names(df)))
@@ -291,7 +313,9 @@ table(df$copd)
 # Diabetes
 any(grepl("diabetes",names(df)))
 grep("diabetes",names(df), value=TRUE)
-df$diabetes <- ifelse(is.na(df$tmp_first_diabetes_diag_date),0,1)
+table(df$cat_diabetes)
+df$diabetes <- ifelse(df$cat_diabetes == "DM unlikely", 0, 1)
+#df$diabetes <- ifelse(is.na(df$tmp_first_diabetes_diag_date),0,1)
 table(df$diabetes)
 
 # Asthma
@@ -440,8 +464,6 @@ df$near_echo <- factor(df$echo_done_near_symptom, levels=c(FALSE, TRUE),
                       labels=c("No","Yes"))
 table(df$near_echo)
 
-
-
 # Echo referral near symptom
 table(df$echo_ref_near_symptom)
 df$near_echoref <- factor(df$echo_ref_near_symptom, levels=c(FALSE, TRUE), 
@@ -460,6 +482,11 @@ str(df$NP2symp)
 
 summary(df$NP2symp)
 
+jpeg("/workspace/output/wp2_1/checks/NP2symp.jpeg")
+hist(df$NP2symp)
+dev.off()
+
+
 #d1 <- subset(df, select=c("symp_date","near_date", "NP2symp"))
 df$NP2symp_cat <- NA
 df$NP2symp_cat <- ifelse(is.na(df$NP2symp_cat) & df$NP2symp<0, 0, df$NP2symp_cat)
@@ -476,6 +503,5 @@ table(df$np_near_symptom)
 
 # Save file for analysis
 # Using feather as it compresses and preserves column types
-write_feather(df,"/workspace/test/file4analysisWP2_1_COVID.feather")
+write_feather(df,"/workspace/output/file4analysisWP2_1_COVID.feather")
 
-#write_feather(df,"/workspace/test/file4analysisWP2_1_postCOVID.feather")

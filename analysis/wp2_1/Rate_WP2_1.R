@@ -2,7 +2,7 @@
 # Script to plot rates of near NP testing for WP2_1 of the REDUCE HF project
 # KS Taylor
 
-rm(v)
+
 rm(list=ls()) 
 
 #install.packages("feather")
@@ -25,7 +25,7 @@ library(ggplot2)
 
 # Select dataset
 # COVID
-df <- read_feather(here::here("test", "file4analysisWP2_1_COVID.feather"))
+df <- read_feather(here::here("output", "file4analysisWP2_1_COVID.feather"))
 
 # Post-COVID
 # df <-.....  
@@ -128,6 +128,8 @@ print(annual)
 #-----------------------------------------
 # Plot: line + points + shaded ribbon (CI) + errorbars
 #-----------------------------------------
+
+jpeg("/workspace/output/wp2_1/figures/incidence rates.jpeg")
 p <- ggplot(annual, aes(x = year, y = rate)) +
   geom_line() +
   geom_point(size = 2) +
@@ -141,6 +143,6 @@ p <- ggplot(annual, aes(x = year, y = rate)) +
     title = "Annual incidence rates with 95% Poisson CIs"
   ) +
   theme_minimal()
-
+p
 print(p)
-
+dev.off()

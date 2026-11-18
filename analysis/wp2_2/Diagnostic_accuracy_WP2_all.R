@@ -1,13 +1,10 @@
-# Diagnostic_accuracy_WP2rev.R
+# Diagnostic_accuracy_WP2_all.R
 # Script for diagnostic accuracy of NP testing for WP2 of the REDUCE HF project
 # By sex, age group and BMI cat for each core group
 # KS Taylor
 
 
-# Search for TEMP
-# Only running for all 
 
-#rm(v)
 rm(list=ls()) 
 
 #   Load the librairies incl "epitools" package to calculate ratios and 95% CIs
@@ -18,80 +15,20 @@ library(feather)
 
 # Load dataset
 # COVID
-df <- read_feather(here::here("test", "file4analysisWP2_2_COVID.feather"))
-
-# TEMP######################################
-# boost dataset and range of NT values to try to get the code working
+df <- read_feather(here::here("output", "file4analysisWP2_2_COVID.feather"))
 
 
-
- td1 <-df
- summary(td1$nt1_result)
- td1$nt1_result <- td1$nt1_result*12
- summary(td1$nt1_result)
-
- td2 <-df
- summary(td2$nt1_result)
- td2$nt1_result <- td2$nt1_result*7
- summary(td2$nt1_result)
-
-
- td3 <-df
- td3$nt1_result <- td3$nt1_result*4
-
- td4 <-df
- td4$nt1_result <- td4$nt1_result*2
-
- td5 <-df
- td5$bmi<-42
- summary(td5$bmi)
-
- td6 <-df
- td6$diag<-1
-
- td7 <-df
-
- td8 <-df
- td8$bmi<-16
- summary(td8$nt1_result)
- td8$nt1_result <- td8$nt1_result*11
- summary(td8$nt1_result)
-
- td9 <-df
- td9$bmi<-24
- summary(td9$nt1_result)
- td9$nt1_result <- td9$nt1_result*11
- summary(td9$nt1_result)
-
- td10 <-df
- td10$bmi<-32
- summary(td10$nt1_result)
- td10$nt1_result <- td10$nt1_result*11
-
- td11 <-df
- td11$bmi<-37
- summary(td11$nt1_result)
- td11$nt1_result <- td11$nt1_result*11
-
- td12<-df
- table(td12$diag)
- td12$diag<-1
- summary(td12$nt1_result)
-
- merged <-rbind(td1,td2,td3,td4,td5, td6,td7,td8, td9,td10,td11, td12)
- df <-merged
- summary(df$bmi)
-
- rm(td1,td2,td3,td4,td5, td6,td7,td8,td9,td10,td11,td12, merged)
-# END OF TEMP###########################################
 nrow(df)
+
+ 
+ 
 all(!is.na(df$nt1_date))
 all(!is.na(df$nt1_result))
 # All have NT pro test and a test result
 
 # Select dataset 
 # QUERY To add MLTCs
-# All have NT==1
+
 df <- subset(df, NT==1) 
 # df <- subset(df, NT==1 & copd==1)
 # df <- subset(df, NT==1 & copd==0)
@@ -323,7 +260,7 @@ tab4 <- tab4[c(2:14),]
 rm(labs, test_lab)  
 View(tab4)
 #   Save the table:
-write.csv(tab4,paste0("/workspace/test/diagnostic_accuracy_by_sex_",btable,Sys.Date(),".csv"), row.names=FALSE)
+write.csv(tab4,paste0("/workspace/output/wp2_2/tables/diagnostic_accuracy_by_sex_",btable,Sys.Date(),".csv"), row.names=FALSE)
 rm(tab1,tab2,tab3,tab4)
 
 
@@ -440,7 +377,7 @@ tab2 <- tab2 %>% rename("Cutoff >=125 pg/ml"="V1",
 rm(labs, test_lab)  
 View(tab2)
 #   Save the table:
-write.csv(tab2,paste0("/workspace/test/diagnostic_accuracy_underwt_",btable,Sys.Date(),".csv"), row.names=FALSE)
+write.csv(tab2,paste0("/workspace/output/wp2_2/tables/diagnostic_accuracy_underwt_",btable,Sys.Date(),".csv"), row.names=FALSE)
 rm(tab1,tab2)
 
 
@@ -543,7 +480,7 @@ tab2 <- tab2 %>% rename("Cutoff >=125 pg/ml"="V1",
 rm(labs, test_lab)  
 View(tab2)
 #   Save the table:
-write.csv(tab2,paste0("/workspace/test/diagnostic_accuracy_normalwt_",btable,Sys.Date(),".csv"), row.names=FALSE)
+write.csv(tab2,paste0("/workspace/output/wp2_2/tables/diagnostic_accuracy_normalwt_",btable,Sys.Date(),".csv"), row.names=FALSE)
 rm(tab1,tab2)
 
 ##### WHO class overweight
@@ -647,7 +584,7 @@ tab2 <- tab2 %>% rename("Cutoff >=125 pg/ml"="V1",
 rm(labs, test_lab)  
 View(tab2)
 #   Save the table:
-write.csv(tab2,paste0("/workspace/test/diagnostic_accuracy_overwt_",btable,Sys.Date(),".csv"), row.names=FALSE)
+write.csv(tab2,paste0("/workspace/output/wp2_2/tables/diagnostic_accuracy_overwt_",btable,Sys.Date(),".csv"), row.names=FALSE)
 rm(tab1,tab2)
 
 ##### WHO class obesity I
@@ -761,7 +698,7 @@ tab2 <- tab2 %>% rename("Cutoff >=125 pg/ml"="V1",
 rm(labs, test_lab)  
 View(tab2)
 #   Save the table:
-write.csv(tab2,paste0("/workspace/test/diagnostic_accuracy_obesityI_",btable,Sys.Date(),".csv"), row.names=FALSE)
+write.csv(tab2,paste0("/workspace/output/wp2_2/tables/diagnostic_accuracy_obesityI_",btable,Sys.Date(),".csv"), row.names=FALSE)
 rm(tab1,tab2)
 
 ##### WHO class obesity II
@@ -883,7 +820,7 @@ tab2 <- tab2 %>% rename("Cutoff >=125 pg/ml"="V1",
 rm(labs, test_lab)  
 View(tab2)
 #   Save the table:
-write.csv(tab2,paste0("/workspace/test/diagnostic_accuracy_obesityII_",btable,Sys.Date(),".csv"), row.names=FALSE)
+write.csv(tab2,paste0("/workspace/output/wp2_2/tables/diagnostic_accuracy_obesityII_",btable,Sys.Date(),".csv"), row.names=FALSE)
 rm(tab1,tab2)
 
 ##### WHO class obesity III
@@ -1005,7 +942,7 @@ tab2 <- tab2 %>% rename("Cutoff >=125 pg/ml"="V1",
 rm(labs, test_lab)  
 View(tab2)
 #   Save the table:
-write.csv(tab2,paste0("/workspace/test/diagnostic_accuracy_obesityIII_",btable,Sys.Date(),".csv"), row.names=FALSE)
+write.csv(tab2,paste0("/workspace/output/wp2_2/tables/diagnostic_accuracy_obesityIII_",btable,Sys.Date(),".csv"), row.names=FALSE)
 rm(tab1,tab2)
 
 

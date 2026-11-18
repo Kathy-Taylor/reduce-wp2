@@ -10,7 +10,7 @@ library(feather)
 
 # Load dataset
 # COVID
-df <- read_feather(here::here("test", "file4analysisWP2_2_COVID.feather"))
+df <- read_feather(here::here("output", "file4analysisWP2_2_COVID.feather"))
 
 # TEMP######################################
 # boost dataset and range of NT values to try to get the code working
@@ -152,7 +152,7 @@ t1 - t0 # 24 mins
 rm(t0,t1)
 
 # Save table to use later
-write.csv(tab,paste0("/workspace/test/diagnostic_accuracy_by_sex.csv"), row.names=FALSE)
+write.csv(tab,paste0("/workspace/output/wp2_2/tables/diagnostic_accuracy_by_sex.csv"), row.names=FALSE)
 #rm(tab)
 #tab <- read.csv(paste0("/workspace/test/diagnostic_accuracy_by_sex.csv"))
 
@@ -273,7 +273,7 @@ rm(nt1,nt2)
 #   Create the plot:
 {
   # save as tiff
- tiff(filename = paste0("/workspace/test/ROC plot HF incidence by gender.tiff"),
+ tiff(filename = paste0("/workspace/output/wp2_2/figures/ROC plot HF incidence by gender.tiff"),
       width = 480/72*600, height = 480/72*600, 
       res = 72/72*600, compression = "lzw")
   # Series

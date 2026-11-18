@@ -1,0 +1,57 @@
+version: '5.0'
+
+actions:
+
+  #WP2.2
+  generate_dataset_wp2_2:
+    run: ehrql:v1 generate-dataset analysis/dataset_definition/dataset_definition_wp2_2.py --output output/tmp_dataset_wp2_2.csv.gz
+    outputs:
+      highly_sensitive:
+        dataset: output/tmp_dataset_wp2_2.csv.gz
+
+
+  diabetes_algo_wp2_2:
+    run: diabetes-algo:v0.0.6 --output output/dataset_wp2_2.csv.gz
+    config:
+      df_input: tmp_dataset_wp2_2.csv.gz
+      birth_date: dob
+      ethnicity_cat: ethnicity_cat
+      df_output: dataset_wp2_2.csv.gz
+    needs:
+      - generate_dataset_wp2_2
+    outputs:
+      highly_sensitive:
+        dataset: output/dataset_wp2_2.csv.gz
+
+ wp2_2_processing:
+    run:r:v2 analysis/wp2_2/Data_prep_WP2_1.R
+    needs:[diabetes_algo_wp2_2]
+    outputs:
+      highly_sensitive:
+        data: output/file4analysisWP2_2_COVID.feather
+      moderately_sensitive:
+        csv: output/wp2_2/checks/check_*.csv
+        figs: output/wp2_2/checks/*.jpeg      
+        
+  wp2_2_baseline_tables:
+    run:r:v2 analysis/Baseline_WP2_2.R
+    needs:[wp2_2_processing]
+    outputs:
+      moderately_sensitive:
+        csv: output/wp2_1/tables/*.csv
+        
+  wp2_2_diagnostic_all:
+  run:r:v2 analysis/Diagnostic_accuracy_WP2_all.R
+    needs:[wp2_2_processing]
+    outputs:
+      moderately_sensitive:
+        csv: output/wp2_1/tables/*.csv
+        
+  wp2_2_plots:
+    run:r:v2 analysis/ROC_plot_by_gender.R
+    needs:[wp2_2_processing]
+    outputs:
+      moderately senstitive:
+        figs: output/wp2_2/figures/*.tiff
+ 
+ 

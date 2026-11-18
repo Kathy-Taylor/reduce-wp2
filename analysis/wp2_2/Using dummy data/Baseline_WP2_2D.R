@@ -1,8 +1,7 @@
-# Baseline_WP2_1.R
+# Baseline_WP2_2.R
 # Script to analyse data for WP2_2 of the REDUCE HF project
 # KSTaylor
 
-#rm(v)
 rm(list=ls()) 
 
 
@@ -23,7 +22,7 @@ library(feather)
 # To add NP2HF (cts) and NP2HF_cat
 
 # COVID
-df <- read_feather(here::here("test", "file4analysisWP2_2_COVID.feather"))
+df <- read_feather(here::here("output", "file4analysisWP2_2_COVID.feather"))
 COVID <- 1
 # Post_COVID
 #df <- read_feather(here::here("test", "file4analysisWP2_2_postCOVID.feather"))
@@ -48,7 +47,7 @@ nrow(df1)
 
 Table <- CreateTableOne(vars=convar, strata="sex", data=df1)
 tab1 <- print(Table, quote=FALSE, smd=F, nonnormal=convar,minMax=TRUE)
-write.csv(tab1,paste0("/workspace/test/","check_WP2_2, COVID_",COVID,"_",Sys.Date(),".csv")) 
+write.csv(tab1,paste0("/workspace/output/wp2_2/checks/","check_WP2_2, COVID_",COVID,"_",Sys.Date(),".csv")) 
 
 
 
@@ -66,12 +65,14 @@ df9 <- subset(df, NT==1 & deprived=="Not deprived")
 df10 <- subset(df, NT==1 & obesity==1)
 df11 <- subset(df, NT==1 & obesity==0)
 table(df$deprived, df$sex)
-#TEMP
+write.csv(tab1,paste0("/workspace/output/wp2_2/checks/","deprived_by_sex, COVID_",COVID,"_",Sys.Date(),".csv")) 
+
+
 datasets <- list(df1=df1, 
                  df2=df2, df3=df3, df4=df4,
                  df5=df5, df6=df6,
                  df7=df7, 
-                #df8=df8,
+                df8=df8,
                  df9=df9, 
                 df10=df10,
                  df11=df11
@@ -86,7 +87,7 @@ for (nm in names(datasets)) {
                           test=FALSE, smd=F)
   tab1 <- print(Table, quote=FALSE, smd=F, nonnormal=convar,cramVars="sex")
   
-  write.csv(tab1,paste0("/workspace/test/",nm,"_baseline table WP2_2, COVID_",COVID,"_",Sys.Date(),".csv")) 
+  write.csv(tab1,paste0("/workspace/output/wp2_2/checks/",nm,"_baseline table WP2_2, COVID_",COVID,"_",Sys.Date(),".csv")) 
 
 }
 

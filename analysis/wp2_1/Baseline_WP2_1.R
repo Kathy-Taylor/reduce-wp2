@@ -3,13 +3,12 @@
 # KSTaylor
 
 
-#rm(v)
 rm(list=ls()) 
 
 
 today=Sys.Date()
 
-install.packages("tableone")
+#install.packages("tableone")
 
 # Load packages
 library(lubridate)
@@ -24,7 +23,7 @@ library(feather)
 # To add NP2symp (cts) and NP2symp_cat
 
 # COVID
-df <- read_feather(here::here("test", "file4analysisWP2_1_COVID.feather"))
+df <- read_feather(here::here("output", "file4analysisWP2_1_COVID.feather"))
 COVID <- 1
 # Post_COVID
 #df <- read_feather(here::here("test", "file4analysisWP2_1_postCOVID.feather"))
@@ -64,6 +63,7 @@ datasets <- list(df1=df1, df2=df2,
                  )
 
 table(df$deprived) 
+write.csv(tab1,paste0("/workspace/output/wp2_1/checks/","deprived_by_sex, COVID_",COVID,"_",Sys.Date(),".csv")) 
 
 # Check distributions of continuous variables
 
@@ -72,7 +72,7 @@ nrow(df1)
 
 Table <- CreateTableOne(vars=convar, strata="sex", data=df1)
 tab1 <- print(Table, quote=FALSE, smd=F, nonnormal=convar,minMax=TRUE)
-write.csv(tab1,paste0("/workspace/test/","check_WP2_1, COVID_",COVID,"_",Sys.Date(),".csv")) 
+write.csv(tab1,paste0("/workspace/output/wp2_1/checks/","check_WP2_1, COVID_",COVID,"_",Sys.Date(),".csv")) 
 
 
 
@@ -84,40 +84,8 @@ for (nm in names(datasets)) {
                           test=FALSE, smd=F)
   tab1 <- print(Table, quote=FALSE, smd=F, nonnormal=convar,cramVars="sex")
   
-  write.csv(tab1,paste0("/workspace/test/",nm,"_baseline table WP2_1, COVID_",COVID,"_",Sys.Date(),".csv")) 
+  write.csv(tab1,paste0("/workspace/output/wp2_1/tables/",nm,"_baseline table WP2_1, COVID_",COVID,"_",Sys.Date(),".csv")) 
 
 }
 
   
-# PREVIOUS CODE 
-  
-
-# # Select dataset
-# # QUERY missing obesity and MLTCs - TO ADD
-#dta <- subset(df, symp==1) 
-# dta <- subset(df, symp==1 & copd==1)
-# dta <- subset(df, symp==1 & copd==0)
-# dta <- subset(df, symp==1 & hypertension==1)
-# dta <- subset(df, symp==1 & hypertension==0)
-# dta <- subset(df, symp==1 & diabetes==1)
-# dta <- subset(df, symp==1 & diabetes==0)
-# dta <- subset(df, symp==1 & deprived=="Bottom quintile")
-# dta <- subset(df, symp==1 & deprived=="Not deprived")
-# 
-# 
-# #Select table name
-# btable<-"Baseline table for all for WP2_1 COVID"
-# btable<-"Baseline table for people with COPD for WP2_1 COVID"
-# btable<-"Baseline table for people without COPD for WP2_1 COVID"
-# btable<-"Baseline table for people with hypertension for WP2_1 COVID"
-# btable<-"Baseline table for people without hypertension for WP2_1 COVID"
-# btable<-"Baseline table for people with diabetes for WP2_1 COVID"
-# btable<-"Baseline table for people without diabetes for WP2_1 COVID"
-# btable<-"Baseline table for people in bottom deprivation quintile for WP2_1 COVID"
-# btable<-"Baseline table for people without deprivation for WP2_1 COVID"
-# 
-#Table <- CreateTableOne(vars=Vars, strata="sex", factorVars = FactorVars, data=dta,
-#                         test=FALSE, smd=F)
-# tab1 <- print(Table, quote=FALSE, smd=F, nonnormal=convar,cramVars="sex")
-# 
-# write.csv(tab1,paste0("/workspace/test/",btable," ", Sys.Date(),".csv")) 
